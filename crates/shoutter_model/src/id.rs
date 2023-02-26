@@ -5,6 +5,8 @@ use uuid::Uuid;
 
 #[derive(Derivative)]
 #[derivative(
+    Clone(bound = ""),
+    Copy(bound = ""),
     Debug(bound = ""),
     PartialEq(bound = ""),
     Eq(bound = ""),

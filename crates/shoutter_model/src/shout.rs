@@ -5,7 +5,11 @@ use crate::{id::Id, user::User};
 #[derive(Debug, Validate)]
 pub struct Shout {
     id: Id<Self>,
+
+    #[validate(length(min = 4, max = 256))]
     content: String,
+
+    #[validate(unique)]
     likes: Vec<Id<User>>,
 }
 
@@ -31,8 +35,22 @@ impl Shout {
         &self.content
     }
 
-    pub fn likes(&self) -> &[Id<User>] {
-        &self.likes
+    pub fn like(&mut self, user_id: Id<User>) -> bool {
+        if !self.liked_by(user_id) {
+            self.likes.push(user_id);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn dislike(&mut self, user_id: Id<User>) -> bool {
+        if let Some(index) = self.likes.iter().position(|id| &user_id == id) {
+            self.likes.swap_remove(index);
+            true
+        } else {
+            false
+        }
     }
 
     pub fn switch_like(&mut self, user_id: Id<User>) {

@@ -43,6 +43,6 @@ impl Shout {
     }
 
     pub fn liked_by(&self, user_id: Id<User>) -> bool {
-        self.likes.iter().position(|id| &user_id == id).is_some()
+        self.likes.contains(&user_id)
     }
 }

@@ -1,0 +1,2 @@
+[workspace]
+members = ["crates/diff_confused_model"]

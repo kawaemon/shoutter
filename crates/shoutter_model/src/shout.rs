@@ -6,16 +6,20 @@ use crate::{id::Id, user::User};
 pub struct Shout {
     id: Id<Self>,
     content: String,
-    likes: Vec<Id<User>>
+    likes: Vec<Id<User>>,
 }
 
 impl Shout {
-    pub fn new(id: Id<Self>, content: String, likes: Vec<Id<User>>) -> Result<Self, ValidationErrors> {
+    pub fn new(
+        id: Id<Self>,
+        content: String,
+        likes: Vec<Id<User>>,
+    ) -> Result<Self, ValidationErrors> {
         let raw_shout = Self { id, content, likes };
 
         match raw_shout.validate() {
             Ok(()) => Ok(raw_shout),
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     }
 

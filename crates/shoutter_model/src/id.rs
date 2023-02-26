@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, str::FromStr, fmt::Display};
+use std::{fmt::Display, marker::PhantomData, str::FromStr};
 
 use derivative::Derivative;
 use uuid::Uuid;
@@ -9,12 +9,9 @@ use uuid::Uuid;
     Copy(bound = ""),
     Debug(bound = ""),
     PartialEq(bound = ""),
-    Eq(bound = ""),
+    Eq(bound = "")
 )]
-pub struct Id<T>(
-    Uuid,
-    #[derivative(Debug = "ignore")] PhantomData<fn() -> T>
-);
+pub struct Id<T>(Uuid, #[derivative(Debug = "ignore")] PhantomData<fn() -> T>);
 
 impl<T> FromStr for Id<T> {
     type Err = uuid::Error;

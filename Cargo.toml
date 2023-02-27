@@ -1,2 +1,5 @@
 [workspace]
-members = ["crates/diff_confused_model"]
+members = [
+    "crates/diff_confused_model",
+    "crates/diff_confused_web"
+]

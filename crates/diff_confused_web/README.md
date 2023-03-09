@@ -5,5 +5,5 @@
 trunk serve
 
 # build
-trunk build --release
+just release-build
 ```

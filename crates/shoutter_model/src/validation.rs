@@ -5,4 +5,3 @@ pub fn only_ascii(checking_str: &str) -> Result<(), ValidationError> {
         Err(ValidationError::new("non_ascii_char_included"))
     }
 }
-

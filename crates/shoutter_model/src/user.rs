@@ -7,10 +7,7 @@ use crate::id::Id;
 #[derive(Debug, Validate)]
 pub struct User {
     id: Id<Self>,
-    #[validate(
-        custom = "only_ascii",
-        length(min = 4, max = 32),
-    )]
+    #[validate(custom = "only_ascii", length(min = 4, max = 32))]
     screen_name: String,
     #[validate(length(min = 4, max = 32))]
     name: String,
@@ -20,7 +17,11 @@ pub struct User {
 
 impl User {
     pub fn new(id: Id<Self>, screen_name: String, name: String, bio: String) -> Self {
-        Self { id, screen_name, name, bio }
+        Self {
+            id,
+            screen_name,
+            name,
+            bio,
+        }
     }
-
 }

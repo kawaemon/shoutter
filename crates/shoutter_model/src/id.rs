@@ -10,7 +10,7 @@ use uuid::Uuid;
     Debug(bound = ""),
     PartialEq(bound = ""),
     Eq(bound = ""),
-    Hash(bound = ""),
+    Hash(bound = "")
 )]
 pub struct Id<T>(Uuid, #[derivative(Debug = "ignore")] PhantomData<fn() -> T>);
 

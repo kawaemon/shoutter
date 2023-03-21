@@ -1,5 +1,5 @@
 [package]
-name = "diff_confused_model"
+name = "shoutter_model"
 version = "0.0.0"
 edition = "2021"
 

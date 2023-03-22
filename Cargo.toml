@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "crates/diff_confused_model",
-    "crates/diff_confused_web"
+    "crates/shoutter_model",
+    "crates/shoutter_web"
 ]

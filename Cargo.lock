@@ -52,19 +52,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "diff_confused_model"
-version = "0.0.0"
-
-[[package]]
-name = "diff_confused_web"
-version = "0.0.0"
-dependencies = [
- "stylist",
- "yew",
- "yew-router",
-]
-
-[[package]]
 name = "either"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -653,6 +640,19 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "shoutter_model"
+version = "0.0.0"
+
+[[package]]
+name = "shoutter_web"
+version = "0.0.0"
+dependencies = [
+ "stylist",
+ "yew",
+ "yew-router",
 ]
 
 [[package]]

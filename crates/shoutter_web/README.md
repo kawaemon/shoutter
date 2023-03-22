@@ -1,9 +1,12 @@
-# diff_confused_web
+# shoutter_web
 
 ```
 # start development server
 trunk serve
 
-# build
+# development build
+trunk build
+
+# release build
 just release-build
 ```

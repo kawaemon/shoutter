@@ -1,8 +1,5 @@
 name: run clippy
 
-permissions:
-  pull-requests: write
-
 on:
   push:
     branches: [master]

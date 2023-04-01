@@ -3,9 +3,9 @@ use std::rc::Rc;
 
 use anyhow::Context as _;
 use async_hofs::prelude::*;
-use diff_confused_rest_interface::SafeEndpoint;
 use prost::Message;
 use reqwest::{Client, Url};
+use shoutter_api_interface::SafeEndpoint;
 use yew::{
     function_component, hook, html, use_context, use_effect_with_deps, use_state, Children,
     ContextProvider, Properties,

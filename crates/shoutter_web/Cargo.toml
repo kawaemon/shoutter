@@ -7,8 +7,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 async-hofs = "0.1"
-cargo-sort = "1.0.9"
-diff_confused_rest_interface = { path = "../diff_confused_rest_interface" }
+shoutter_api_interface = { path = "../shoutter_api_interface" }
 once_cell = "1.17"
 prost = "0.11"
 reqwest = "0.11"

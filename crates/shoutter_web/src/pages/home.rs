@@ -1,4 +1,4 @@
-use diff_confused_rest_interface::{protobuf, GreetingEndpoint};
+use shoutter_api_interface::{protobuf, GreetingEndpoint};
 use stylist::yew::use_style;
 use yew::{function_component, html, Html};
 use yew_router::prelude::use_navigator;

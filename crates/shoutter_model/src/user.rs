@@ -1,8 +1,7 @@
-use crate::validation::only_ascii;
-
 use validator::{Validate, ValidationError};
 
 use crate::id::Id;
+use crate::validation::only_ascii;
 
 #[derive(Debug, Validate)]
 pub struct User {

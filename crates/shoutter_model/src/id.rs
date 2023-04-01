@@ -1,4 +1,6 @@
-use std::{fmt::Display, marker::PhantomData, str::FromStr};
+use std::fmt::Display;
+use std::marker::PhantomData;
+use std::str::FromStr;
 
 use derivative::Derivative;
 use uuid::Uuid;

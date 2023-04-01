@@ -2,7 +2,8 @@ use std::collections::HashSet;
 
 use validator::{Validate, ValidationErrors};
 
-use crate::{id::Id, user::User};
+use crate::id::Id;
+use crate::user::User;
 
 #[derive(Debug, Validate)]
 pub struct Shout {

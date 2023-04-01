@@ -1,3 +1,5 @@
+use validator::ValidationError;
+
 pub fn only_ascii(checking_str: &str) -> Result<(), ValidationError> {
     if checking_str.is_ascii() {
         Ok(())

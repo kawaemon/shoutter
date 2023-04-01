@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "crates/shoutter_model",
-    "crates/shoutter_web"
+    "crates/shoutter_web",
+    "crates/shoutter_web/minifier",
 ]

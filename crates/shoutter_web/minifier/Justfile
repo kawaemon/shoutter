@@ -1,0 +1,4 @@
+build:
+    wasm-pack build --target=nodejs --debug
+    cd pkg && node minifier_rs.js
+

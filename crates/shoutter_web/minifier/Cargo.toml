@@ -1,0 +1,21 @@
+[package]
+name = "minifier-rs"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "1.0"
+console_error_panic_hook = "0.1"
+js-sys = "0.3"
+once_cell = "1.17.1"
+rt-format = "0.3.1"
+time = { version = "0.3", features = ["wasm-bindgen"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["time"] }
+tracing-web = "0.1"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["console"] }

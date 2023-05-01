@@ -1,0 +1,6 @@
+syntax = "proto3";
+package protobuf;
+
+message GreetingName { string name = 1; }
+
+message Greeting { string content = 1; }

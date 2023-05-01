@@ -2,10 +2,21 @@
 name = "shoutter_web"
 version = "0.0.0"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0"
+async-hofs = "0.1"
+shoutter_api_interface = { path = "../shoutter_api_interface" }
+once_cell = "1.17"
+prost = "0.11"
+reqwest = "0.11"
 stylist = { version = "0.12", features = ["yew_integration"] }
+time = { version = "0.3", features = ["wasm-bindgen"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["time"] }
+tracing-web = "0.1"
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3"
 yew = { version = "0.20", features = ["csr"] }
 yew-router = "0.17"

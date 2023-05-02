@@ -3,6 +3,7 @@ mod greeting;
 use axum::Router;
 use prost::Message;
 use shoutter_api_interface::{Endpoint, GreetingEndpoint};
+use tracing::info;
 
 use crate::endpoints::greeting::GreetingEndpointHandler;
 use crate::extractor::Proto;
@@ -32,7 +33,7 @@ where
     use axum::routing::{delete, get, head, options, patch, post, put, trace};
 
     let path = endpoint.path(());
-    println!("🗺️ Registering '{path}'");
+    info!("🗺️ '{path}'");
 
     let method_router = match E::METHOD.as_str() {
         "DELETE" => delete,

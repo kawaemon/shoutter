@@ -1,19 +1,33 @@
 #![feature(stmt_expr_attributes)]
 
+use tower_http::cors::CorsLayer;
+use tower_http::trace::TraceLayer;
+use tracing_subscriber::EnvFilter;
+
+use crate::cors::cors_layer;
 use crate::endpoints::create_routing;
 
+mod cors;
 mod endpoints;
 mod extractor;
 
 #[tokio::main]
 async fn main() {
-    let route = create_routing();
-
     #[cfg(feature = "test-requester")]
     test_requester::hoge();
 
-    axum::Server::bind(&"127.0.0.1:8000".parse().unwrap())
-        .serve(route.into_make_service())
+    // FIXME: The log is not emitted when the client smashed endpoints.
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
+    let make_service = create_routing()
+        .layer(cors_layer())
+        .layer(TraceLayer::new_for_http())
+        .into_make_service();
+
+    axum::Server::bind(&"127.0.0.1:3000".parse().unwrap())
+        .serve(make_service)
         .await
         .unwrap();
 }
@@ -34,7 +48,7 @@ mod test_requester {
             };
 
             let response = reqwest::Client::new()
-                .post("http://localhost:8000/greet")
+                .post("http://localhost:3000/greet")
                 .body(bytes.encode_to_vec())
                 .send()
                 .await

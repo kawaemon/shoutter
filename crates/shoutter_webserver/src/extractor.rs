@@ -8,7 +8,7 @@ use axum::response::{IntoResponse, Response};
 use axum::{async_trait, http};
 use prost::DecodeError;
 
-pub struct Proto<T: prost::Message + Default>(T);
+pub struct Proto<T: prost::Message + Default>(pub T);
 
 #[derive(thiserror::Error, Debug)]
 pub enum ProtoRequestFailure {

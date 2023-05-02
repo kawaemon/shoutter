@@ -1430,6 +1430,7 @@ dependencies = [
  "prost",
  "prost-types",
  "reqwest",
+ "shoutter_api_interface",
  "thiserror",
  "tokio",
 ]

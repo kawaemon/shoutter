@@ -1,10 +1,6 @@
 #![feature(stmt_expr_attributes)]
 
-use std::net::SocketAddr;
-
-use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
-use tracing_subscriber::EnvFilter;
 
 use crate::cors::cors_layer;
 use crate::endpoints::create_routing;

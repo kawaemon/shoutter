@@ -10,7 +10,7 @@ async fn main() {
     let route = create_routing();
 
     #[cfg(feature = "test-requester")]
-    test_requestor::hoge();
+    test_requester::hoge();
 
     axum::Server::bind(&"127.0.0.1:8000".parse().unwrap())
         .serve(route.into_make_service())
@@ -19,7 +19,7 @@ async fn main() {
 }
 
 #[cfg(feature = "test-requester")]
-mod test_requestor {
+mod test_requester {
     use std::time::Duration;
 
     use prost::Message;

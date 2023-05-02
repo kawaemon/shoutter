@@ -1,12 +1,7 @@
 mod greeting;
 
-use std::any::Any;
-
-use axum::extract::State;
-use axum::http::Method;
 use axum::Router;
 use prost::Message;
-use shoutter_api_interface::protobuf::{Greeting, GreetingName};
 use shoutter_api_interface::{Endpoint, GreetingEndpoint};
 
 use crate::endpoints::greeting::GreetingEndpointHandler;
@@ -25,12 +20,11 @@ pub trait EndpointHandler {
 
 pub fn create_routing() -> Router {
     let router = Router::new();
-    let router = route(router, GreetingEndpoint, GreetingEndpointHandler);
 
-    router
+    route(router, GreetingEndpoint, GreetingEndpointHandler)
 }
 
-fn route<E, H>(router: Router, endpoint: E, mut handler: H) -> Router
+fn route<E, H>(router: Router, endpoint: E, handler: H) -> Router
 where
     E: Endpoint<UrlParam = ()>,
     H: EndpointHandler<Endpoint = E> + Clone + Send + Sync + 'static,

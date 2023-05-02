@@ -1,5 +1,7 @@
 #![feature(stmt_expr_attributes)]
 
+use std::net::SocketAddr;
+
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -10,6 +12,8 @@ use crate::endpoints::create_routing;
 mod cors;
 mod endpoints;
 mod extractor;
+
+const BASE_URL: &str = "[::]:3000";
 
 #[tokio::main]
 async fn main() {
@@ -26,7 +30,7 @@ async fn main() {
         .layer(TraceLayer::new_for_http())
         .into_make_service();
 
-    axum::Server::bind(&"127.0.0.1:3000".parse().unwrap())
+    axum::Server::bind(&BASE_URL.parse().unwrap())
         .serve(make_service)
         .await
         .unwrap();

@@ -1,0 +1,22 @@
+[package]
+name = "shoutter_webserver"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum = "0.6.15"
+prost = "0.11.9"
+prost-types = "0.11.9"
+thiserror = "1.0.40"
+tokio = { version = "1.27.0", features = ["full"] }
+tower-http = { version = "0.4.0", features = ["full"] }
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+reqwest = { version = "0.11.16", optional = true }
+shoutter_api_interface = { path = "../shoutter_api_interface" }
+
+[features]
+default = ["test-requester"]
+test-requester = ["reqwest"]

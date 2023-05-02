@@ -3,4 +3,6 @@ members = [
     "crates/shoutter_model",
     "crates/shoutter_web",
     "crates/shoutter_web/minifier",
+    "crates/shoutter_api_interface",
+    "crates/shoutter_webserver",
 ]

@@ -1,4 +1,7 @@
+#![feature(stmt_expr_attributes)]
+
 mod js;
+mod symbol;
 
 use std::future::Future;
 use std::path::Path;
@@ -49,6 +52,23 @@ async fn start() -> Result<()> {
             Some("html" | "css" | "js" | "wasm")
         )
     });
+
+    let bg_wasm = files
+        .iter()
+        .find(|x| x.to_str().unwrap().ends_with("_bg.wasm"))
+        .unwrap();
+    let js = files
+        .iter()
+        .find(|x| {
+            bg_wasm
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .starts_with(x.file_stem().unwrap().to_str().unwrap())
+        })
+        .unwrap();
+    symbol::minify_symbol(bg_wasm, js).await;
 
     let mut file_name_max_len = 0;
     for f in &files {

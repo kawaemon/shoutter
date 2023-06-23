@@ -1,24 +1,26 @@
 #![feature(stmt_expr_attributes)]
 
-mod js;
+mod func;
 mod symbol;
+mod sys;
 
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 
 use anyhow::{Context as _, Result};
-use js::minifier;
 use once_cell::sync::Lazy;
+use sys::minifier;
 use tracing_subscriber::fmt::format::{FmtSpan, Pretty};
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::EnvFilter;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use web_sys::console;
 
-use crate::js::{brotli, fs};
+use crate::sys::{brotli, fs};
 
 #[wasm_bindgen(start)]
 async fn main() {
@@ -38,6 +40,7 @@ async fn start() -> Result<()> {
     let perf_layer = tracing_web::performance_layer().with_details_from_fields(Pretty::default());
 
     tracing_subscriber::registry()
+        .with(EnvFilter::new("swr=none"))
         .with(fmt_layer)
         .with(perf_layer)
         .init();
@@ -135,7 +138,12 @@ async fn process_file(file: &Path) -> Result<Option<ProcessStats>> {
     let stat = match file.extension().and_then(|x| x.to_str()) {
         Some("html") => minify(file, |x| Box::pin(minifier::html(x))).await?,
         Some("css") => minify(file, |x| Box::pin(minifier::css(x))).await?,
-        Some("js") => minify(file, |x| Box::pin(minifier::js(x))).await?,
+        Some("js") => {
+            minify(file, |x| {
+                Box::pin(async move { Ok(func::minify_function_decl(x)) })
+            })
+            .await?
+        }
         Some("wasm") => {
             let origin = fs::read_file(file).await?;
             fs::write_file(&MINIFIED_DIR.join(file.file_name().unwrap()), &origin).await?;

@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 stylist = { version = "0.12", features = ["yew_integration"] }
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 yew = { version = "0.20", features = ["csr"] }
 yew-router = "0.17"

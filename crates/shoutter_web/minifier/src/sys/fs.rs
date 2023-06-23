@@ -5,7 +5,7 @@ use js_sys::{Array, Object, Uint8Array};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::{JsCast, JsValue};
 
-use crate::js::{object, JsError};
+use crate::sys::{object, JsError};
 
 pub async fn rimraf(path: &Path) -> Result<()> {
     #[wasm_bindgen(module = "fs/promises")]

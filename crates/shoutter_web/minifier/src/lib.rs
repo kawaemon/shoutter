@@ -1,4 +1,6 @@
 #![feature(stmt_expr_attributes)]
+#![feature(let_chains)]
+#![feature(box_patterns)]
 
 mod func;
 mod symbol;
@@ -11,11 +13,12 @@ use std::pin::Pin;
 use anyhow::{Context as _, Result};
 use once_cell::sync::Lazy;
 use sys::minifier;
+use tracing::{Metadata, Subscriber};
 use tracing_subscriber::fmt::format::{FmtSpan, Pretty};
 use tracing_subscriber::fmt::time::UtcTime;
-use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::layer::{Context, SubscriberExt};
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::Layer;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use web_sys::console;
@@ -40,7 +43,7 @@ async fn start() -> Result<()> {
     let perf_layer = tracing_web::performance_layer().with_details_from_fields(Pretty::default());
 
     tracing_subscriber::registry()
-        .with(EnvFilter::new("swr=none"))
+        .with(SwcFilter)
         .with(fmt_layer)
         .with(perf_layer)
         .init();
@@ -106,6 +109,17 @@ async fn start() -> Result<()> {
     Ok(())
 }
 
+// swc is too loud
+struct SwcFilter;
+impl<S: Subscriber> Layer<S> for SwcFilter {
+    fn enabled(&self, metadata: &Metadata<'_>, _ctx: Context<'_, S>) -> bool {
+        if let Some(mpath) = metadata.module_path() && mpath.starts_with("swc") {
+            return false
+        }
+        true
+    }
+}
+
 fn println(s: String) {
     console::log_1(&JsValue::from(s));
 }
@@ -140,7 +154,7 @@ async fn process_file(file: &Path) -> Result<Option<ProcessStats>> {
         Some("css") => minify(file, |x| Box::pin(minifier::css(x))).await?,
         Some("js") => {
             minify(file, |x| {
-                Box::pin(async move { Ok(func::minify_function_decl(x)) })
+                Box::pin(async move { minifier::js(&func::minify_function_decl(x)).await })
             })
             .await?
         }

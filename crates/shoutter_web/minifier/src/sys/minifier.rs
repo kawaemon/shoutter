@@ -36,6 +36,7 @@ fn js_minifier_option() -> Object {
         compress: object! {
             ecma: 2021,
             passes: 3,
+            pure_getters: true,
         },
     }
 }

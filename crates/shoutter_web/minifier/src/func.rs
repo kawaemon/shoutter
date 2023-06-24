@@ -1,10 +1,13 @@
+use string_cache::Atom;
 use swc_core::common::input::StringInput;
 use swc_core::common::sync::Lrc;
-use swc_core::common::{FileName, SourceMap};
+use swc_core::common::{FileName, SourceMap, DUMMY_SP};
 use swc_core::ecma::ast::{
-    ArrowExpr, BindingIdent, BlockStmtOrExpr, Decl, EsVersion, Expr, Function, Pat, Program,
-    VarDecl, VarDeclKind, VarDeclarator,
+    ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Decl, EsVersion, Expr,
+    ExprOrSpread, FnDecl, FnExpr, Function, Ident, Module, ModuleItem, Param, Pat, Program,
+    RestPat, ReturnStmt, Stmt, VarDecl, VarDeclKind, VarDeclarator,
 };
+use swc_core::ecma::atoms::JsWord;
 use swc_core::ecma::codegen::text_writer::JsWriter;
 use swc_core::ecma::codegen::Emitter;
 use swc_core::ecma::parser::lexer::Lexer;
@@ -22,7 +25,7 @@ pub fn minify_function_decl(js: impl Into<String>) -> String {
     ));
     let module = parser.parse_module().unwrap();
     let module = Program::Module(module)
-        .fold_with(&mut as_folder(TransformVisitor))
+        .fold_with(&mut as_folder(FunctionToArrowFn))
         .expect_module();
     let mut buf = vec![];
     Emitter {
@@ -36,12 +39,56 @@ pub fn minify_function_decl(js: impl Into<String>) -> String {
     String::from_utf8(buf).unwrap()
 }
 
-fn map_function(f: Function) -> Option<ArrowExpr> {
-    let Some(params) = f
+fn map_function(mut f: Function) -> Option<ArrowExpr> {
+    let arg_replacement = Atom::from("__minifier_arguments");
+    let mut arg_replacer = RenameArguments::new(arg_replacement.clone());
+    f.body.visit_mut_children_with(&mut arg_replacer);
+    if arg_replacer.have_arguments {
+        if !f.params.is_empty() {
+            let p = Program::Module(Module {
+                span: DUMMY_SP,
+                body: [ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
+                    ident: Ident::new(Atom::from("debug"), DUMMY_SP),
+                    declare: false,
+                    function: Box::new(f.clone()),
+                })))]
+                .to_vec(),
+                shebang: None,
+            });
+            tracing::info!("{}", fmt(p));
+            panic!("have_arguments && !params.is_empty");
+        }
+        f.params.push(Param {
+            span: DUMMY_SP,
+            decorators: vec![],
+            pat: Pat::Rest(RestPat {
+                span: DUMMY_SP,
+                dot3_token: DUMMY_SP,
+                arg: Box::new(Pat::Ident(BindingIdent {
+                    id: Ident::new(arg_replacement, DUMMY_SP),
+                    type_ann: None,
+                })),
+                type_ann: None,
+            }),
+        })
+    }
+    if let Some(BlockStmt { stmts: body, .. }) = &mut f.body
+        && let [may_decl, may_ret] = &mut body[..]
+        && let Stmt::Decl(Decl::Var(box VarDecl { kind: VarDeclKind::Const, declare: false, decls, span: _  })) = may_decl
+        && let [VarDeclarator { name: Pat::Ident(BindingIdent { id: ref decl_name, type_ann: None }), init: Some(box ref init), definite: false, .. }] = decls[..]
+        && let Stmt::Return(ReturnStmt { arg: Some(box Expr::Call(CallExpr { args, type_args: None, .. })), .. }) = may_ret
+        && let [ExprOrSpread { expr: box ref mut arg, .. }] = args[..]
+        && let Expr::Ident(arg_ident) = arg
+        && arg_ident.sym == decl_name.sym
+    {
+        *arg = init.clone();
+        body.remove(0);
+    }
+    let params = f
         .params
         .into_iter()
         .map(|x| x.decorators.is_empty().then_some(x.pat))
-        .collect::<Option<Vec<_>>>() else { return None };
+        .collect::<Option<Vec<_>>>()?;
     Some(ArrowExpr {
         span: f.span,
         params,
@@ -53,9 +100,9 @@ fn map_function(f: Function) -> Option<ArrowExpr> {
     })
 }
 
-pub struct TransformVisitor;
+pub struct FunctionToArrowFn;
 
-impl VisitMut for TransformVisitor {
+impl VisitMut for FunctionToArrowFn {
     fn visit_mut_expr(&mut self, n: &mut Expr) {
         n.visit_mut_children_with(self);
         let Expr::Fn(f) = n else { return };
@@ -70,6 +117,7 @@ impl VisitMut for TransformVisitor {
 
     fn visit_mut_decl(&mut self, n: &mut Decl) {
         n.visit_mut_children_with(self);
+
         let Decl::Fn(f) = n else { return };
 
         let Some(arrow_fn) = map_function(*f.function.clone()) else { return };
@@ -91,5 +139,49 @@ impl VisitMut for TransformVisitor {
             declare: f.declare,
             decls: vec![d],
         }));
+    }
+}
+
+fn fmt(p: Program) -> String {
+    let cm = <Lrc<SourceMap> as Default>::default();
+    let mut buf = vec![];
+
+    Emitter {
+        cfg: Default::default(),
+        cm: cm.clone(),
+        comments: Default::default(),
+        wr: Box::new(JsWriter::new(cm, "\n", &mut buf, None)),
+    }
+    .emit_program(&p)
+    .unwrap();
+
+    String::from_utf8(buf).unwrap()
+}
+
+/// find `arguments` identifier
+pub struct RenameArguments {
+    replacement: JsWord,
+    have_arguments: bool,
+}
+impl RenameArguments {
+    fn new(replacement: JsWord) -> Self {
+        Self {
+            replacement,
+            have_arguments: false,
+        }
+    }
+}
+impl VisitMut for RenameArguments {
+    fn visit_mut_fn_decl(&mut self, _n: &mut FnDecl) {
+        // stop propergation
+    }
+    fn visit_mut_fn_expr(&mut self, _n: &mut FnExpr) {
+        // stop propergation
+    }
+    fn visit_mut_ident(&mut self, n: &mut Ident) {
+        if &*n.sym == "arguments" {
+            n.sym = self.replacement.clone();
+            self.have_arguments = true;
+        }
     }
 }

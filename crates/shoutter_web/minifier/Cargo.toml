@@ -9,22 +9,27 @@ crate-type = ["cdylib"]
 [dependencies]
 anyhow = "1.0"
 console_error_panic_hook = "0.1"
-dotenv = "0.15.0"
-getrandom = { version = "0.2.10", features = ["js"] }
+dotenv = "0.15"
 js-sys = "0.3"
 minifier-rs-macro = { path = "./macro" }
-once_cell = "1.17.1"
+once_cell = "1.17"
+string_cache = "0.8"
 time = { version = "0.3", features = ["wasm-bindgen"] }
+tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["time"] }
 tracing-web = "0.1"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
-wasm-encoder = "0.29.0"
-wasmparser = "0.107.0"
+wasm-encoder = "0.29"
+wasmparser = "0.107"
 web-sys = { version = "0.3", features = ["console"] }
 
+# this crate is not direcrly depending on this crate, but
+# we need "js" feature to build WASM.
+getrandom = { version = "0.2", features = ["js"] }
+
 [dependencies.swc_core]
-version = "0.78.22"
+version = "0.78"
 features = [
     "common",
     "ecma_ast",

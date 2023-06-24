@@ -396,7 +396,7 @@ impl Iterator for MinifiedIdent {
         let chars = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         let mut n = self.n;
         loop {
-            ret.push(chars[n % chars.len()] as char);
+            ret.insert(0, chars[n % chars.len()] as char);
             n /= chars.len();
             if n == 0 {
                 break;

@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use std::collections::HashMap;
-use std::path::Path;
 
 use minifier_rs_macro::struct_map;
 use wasm_encoder::{ConstExpr, ElementSegment};
@@ -129,8 +128,7 @@ fn map_ref_type(ref_: wasmparser::RefType) -> wasm_encoder::RefType {
     }
 }
 
-pub async fn minify_symbol(wasm_path: &Path, js_path: &Path) {
-    let wasm = crate::fs::read_file(wasm_path).await.unwrap();
+pub async fn minify_symbol(wasm: &mut Vec<u8>, js: &mut Vec<u8>) {
     let parser = wasmparser::Parser::new(0);
 
     let mut module = wasm_encoder::Module::new();
@@ -144,7 +142,7 @@ pub async fn minify_symbol(wasm_path: &Path, js_path: &Path) {
     let mut code_section_remaining = 0;
     let mut code_section_encoder = None;
 
-    for payload in parser.parse_all(&wasm) {
+    for payload in parser.parse_all(wasm) {
         let payload = payload.unwrap();
         match payload {
             wasmparser::Payload::TypeSection(section) => {
@@ -350,34 +348,31 @@ pub async fn minify_symbol(wasm_path: &Path, js_path: &Path) {
     assert!(code_section_encoder.is_none());
 
     let new_wasm = module.finish();
-
-    crate::fs::write_file(wasm_path, &new_wasm).await.unwrap();
-
-    let js = crate::fs::read_file(js_path).await.unwrap();
-    let mut js = String::from_utf8(js).unwrap();
+    let mut js_string = String::from_utf8(js.clone()).unwrap();
 
     // drawback: modifing javascript AST is better
     for (mod_before, (mod_after, fn_idents)) in imports_ident_map {
-        js = js.replace(
+        js_string = js_string.replace(
             &format!("imports.{mod_before} = {{}};"),
             &format!("imports.{mod_after} = {{}};"),
         );
 
         for (fn_before, fn_after) in fn_idents {
-            js = js.replace(
+            js_string = js_string.replace(
                 &format!("imports.{mod_before}.{fn_before}"),
                 &format!("imports.{mod_after}.{fn_after}"),
             );
         }
     }
     for (export_before, export_after) in exports_ident_map {
-        js = js.replace(
+        js_string = js_string.replace(
             &format!("wasm.{export_before}"),
             &format!("wasm.{export_after}"),
         );
     }
 
-    crate::fs::write_file(js_path, js.as_bytes()).await.unwrap();
+    *js = js_string.into_bytes();
+    *wasm = new_wasm;
 }
 
 struct MinifiedIdent {

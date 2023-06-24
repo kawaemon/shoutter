@@ -4,8 +4,8 @@ use swc_core::common::sync::Lrc;
 use swc_core::common::{FileName, SourceMap, DUMMY_SP};
 use swc_core::ecma::ast::{
     ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Decl, EsVersion, Expr,
-    ExprOrSpread, FnDecl, FnExpr, Function, Ident, Module, ModuleItem, Param, Pat, Program,
-    RestPat, ReturnStmt, Stmt, VarDecl, VarDeclKind, VarDeclarator,
+    ExprOrSpread, FnDecl, FnExpr, Function, Ident, Param, Pat, Program, RestPat, ReturnStmt, Stmt,
+    VarDecl, VarDeclKind, VarDeclarator,
 };
 use swc_core::ecma::atoms::JsWord;
 use swc_core::ecma::codegen::text_writer::JsWriter;
@@ -17,13 +17,14 @@ use swc_core::ecma::visit::{as_folder, FoldWith, VisitMut, VisitMutWith};
 pub fn minify_function_decl(js: impl Into<String>) -> String {
     let cm: Lrc<SourceMap> = Default::default();
     let fm = cm.new_source_file(FileName::Custom("in.js".to_owned()), js.into());
-    let mut parser = Parser::new_from(Lexer::new(
+    let module = Parser::new_from(Lexer::new(
         Default::default(),
         EsVersion::latest(),
         StringInput::from(&*fm),
         None,
-    ));
-    let module = parser.parse_module().unwrap();
+    ))
+    .parse_module()
+    .unwrap();
     let module = Program::Module(module)
         .fold_with(&mut as_folder(FunctionToArrowFn))
         .expect_module();
@@ -45,17 +46,6 @@ fn map_function(mut f: Function) -> Option<ArrowExpr> {
     f.body.visit_mut_children_with(&mut arg_replacer);
     if arg_replacer.have_arguments {
         if !f.params.is_empty() {
-            let p = Program::Module(Module {
-                span: DUMMY_SP,
-                body: [ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
-                    ident: Ident::new(Atom::from("debug"), DUMMY_SP),
-                    declare: false,
-                    function: Box::new(f.clone()),
-                })))]
-                .to_vec(),
-                shebang: None,
-            });
-            tracing::info!("{}", fmt(p));
             panic!("have_arguments && !params.is_empty");
         }
         f.params.push(Param {
@@ -140,22 +130,6 @@ impl VisitMut for FunctionToArrowFn {
             decls: vec![d],
         }));
     }
-}
-
-fn fmt(p: Program) -> String {
-    let cm = <Lrc<SourceMap> as Default>::default();
-    let mut buf = vec![];
-
-    Emitter {
-        cfg: Default::default(),
-        cm: cm.clone(),
-        comments: Default::default(),
-        wr: Box::new(JsWriter::new(cm, "\n", &mut buf, None)),
-    }
-    .emit_program(&p)
-    .unwrap();
-
-    String::from_utf8(buf).unwrap()
 }
 
 /// find `arguments` identifier

@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use std::collections::HashMap;
-use std::path::Path;
 
 use minifier_rs_macro::struct_map;
 use wasm_encoder::{ConstExpr, ElementSegment};
@@ -129,8 +128,7 @@ fn map_ref_type(ref_: wasmparser::RefType) -> wasm_encoder::RefType {
     }
 }
 
-pub async fn minify_symbol(wasm_path: &Path, js_path: &Path) {
-    let wasm = crate::fs::read_file(wasm_path).await.unwrap();
+pub async fn minify_symbol(wasm: &mut Vec<u8>, js: &mut Vec<u8>) {
     let parser = wasmparser::Parser::new(0);
 
     let mut module = wasm_encoder::Module::new();
@@ -144,7 +142,7 @@ pub async fn minify_symbol(wasm_path: &Path, js_path: &Path) {
     let mut code_section_remaining = 0;
     let mut code_section_encoder = None;
 
-    for payload in parser.parse_all(&wasm) {
+    for payload in parser.parse_all(wasm) {
         let payload = payload.unwrap();
         match payload {
             wasmparser::Payload::TypeSection(section) => {
@@ -350,34 +348,31 @@ pub async fn minify_symbol(wasm_path: &Path, js_path: &Path) {
     assert!(code_section_encoder.is_none());
 
     let new_wasm = module.finish();
-
-    crate::fs::write_file(wasm_path, &new_wasm).await.unwrap();
-
-    let js = crate::fs::read_file(js_path).await.unwrap();
-    let mut js = String::from_utf8(js).unwrap();
+    let mut js_string = String::from_utf8(js.clone()).unwrap();
 
     // drawback: modifing javascript AST is better
     for (mod_before, (mod_after, fn_idents)) in imports_ident_map {
-        js = js.replace(
+        js_string = js_string.replace(
             &format!("imports.{mod_before} = {{}};"),
             &format!("imports.{mod_after} = {{}};"),
         );
 
         for (fn_before, fn_after) in fn_idents {
-            js = js.replace(
+            js_string = js_string.replace(
                 &format!("imports.{mod_before}.{fn_before}"),
                 &format!("imports.{mod_after}.{fn_after}"),
             );
         }
     }
     for (export_before, export_after) in exports_ident_map {
-        js = js.replace(
+        js_string = js_string.replace(
             &format!("wasm.{export_before}"),
             &format!("wasm.{export_after}"),
         );
     }
 
-    crate::fs::write_file(js_path, js.as_bytes()).await.unwrap();
+    *js = js_string.into_bytes();
+    *wasm = new_wasm;
 }
 
 struct MinifiedIdent {
@@ -391,12 +386,15 @@ impl MinifiedIdent {
 impl Iterator for MinifiedIdent {
     type Item = String;
 
+    // 123
+    // 123 % 10 = 3, 123 /= 10 -> 12
+    // 12 % 10 = 2, 12 /= 10 -> 1
     fn next(&mut self) -> Option<Self::Item> {
         let mut ret = String::new();
         let chars = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         let mut n = self.n;
         loop {
-            ret.push(chars[n % chars.len()] as char);
+            ret.insert(0, chars[n % chars.len()] as char);
             n /= chars.len();
             if n == 0 {
                 break;
@@ -409,15 +407,7 @@ impl Iterator for MinifiedIdent {
 #[test]
 fn minified_ident() {
     assert_eq!(
-        MinifiedIdent::new().take(5).collect::<Vec<_>>().join(""),
-        "abcde"
-    );
-    assert_eq!(
-        MinifiedIdent::new()
-            .step_by(10)
-            .take(10)
-            .collect::<Vec<_>>()
-            .join(" "),
-        "a k u E O Y ib sb Cb Mb"
+        MinifiedIdent::new().take(60).collect::<Vec<_>>().join(" "),
+        "a b c d e f g h i j k l m n o p q r s t u v w x y z A B C D E F G H I J K L M N O P Q R S T U V W X Y Z ba bb bc bd be bf bg bh",
     );
 }

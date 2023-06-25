@@ -1,3 +1,6 @@
 release-build:
     CARGO_PROFILE_RELEASE_OPT_LEVEL=z trunk build --release
     cd minifier && pnpm i && just
+
+debug-build:
+    trunk build

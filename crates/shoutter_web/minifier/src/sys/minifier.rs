@@ -3,7 +3,7 @@ use js_sys::{Array, Function, Object, Reflect};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::{JsCast, JsValue};
 
-use crate::js::{object, JsError};
+use crate::sys::{object, JsError};
 
 fn html_minifier_option() -> Object {
     object! {
@@ -31,10 +31,12 @@ fn html_minifier_option() -> Object {
 
 fn js_minifier_option() -> Object {
     object! {
-        ecma: 2020,
+        ecma: 2021,
         toplevel: true,
         compress: object! {
+            ecma: 2021,
             passes: 3,
+            pure_getters: true,
         },
     }
 }

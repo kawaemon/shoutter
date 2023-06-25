@@ -2,7 +2,7 @@
 #![feature(let_chains)]
 #![feature(box_patterns)]
 
-mod func;
+mod opt_js;
 mod symbol;
 mod sys;
 
@@ -87,8 +87,8 @@ impl TrackedFile {
 
 // Async Closure
 macro_rules! ac {
-    (|$i:ident| $b:block) => {
-        |$i| Box::pin(async move { $b })
+    (|$i:ident$(:$ty:ty)?| $b:block) => {
+        |$i$(:$ty)?| { Box::pin(async move { $b }) as Pin<Box<dyn Future<Output = _>>> }
     };
 }
 
@@ -120,6 +120,10 @@ async fn start() -> Result<()> {
     let mut wasm = vec![];
     let mut targets = vec![];
 
+    // grouping
+    // html, css => Individual
+    // js if wasm pair found => WasmBindgen { js, wasm }
+    // other js and wasm => Individual
     while let Some(file) = file_paths.pop() {
         let Some(ext @ ("html" | "css" | "js" | "wasm")) = file.extension().and_then(|x| x.to_str()) else { continue };
         let file = TrackedFile::new(&file).await?;
@@ -135,10 +139,10 @@ async fn start() -> Result<()> {
             wasm.path.file_stem().unwrap().to_str().unwrap()
                 == js.path.file_stem().unwrap().to_str().unwrap().to_owned() + "_bg"
         };
-        if let Some(idx) = wasm.iter().position(is_pair_wasm) {
+        if let Some(idex) = wasm.iter().position(is_pair_wasm) {
             targets.push(ProcessTarget::WasmBindgen {
                 js,
-                wasm: wasm.remove(idx),
+                wasm: wasm.remove(idex),
             });
         } else {
             targets.push(ProcessTarget::Individual(js));
@@ -147,42 +151,27 @@ async fn start() -> Result<()> {
     for wasm in wasm {
         targets.push(ProcessTarget::Individual(wasm));
     }
-    for target in &mut targets {
-        match target {
-            ProcessTarget::Individual(_) => {}
-            ProcessTarget::WasmBindgen { js, wasm } => {
-                symbol::minify_symbol(&mut wasm.content, &mut js.content).await;
-            }
-        }
-    }
+
+    // minify
+    let minify_html = ac!(|x: String| { sys::minifier::html(&x).await });
+    let minify_css = ac!(|x: String| { sys::minifier::css(&x).await });
+    let minify_js = ac!(|x: String| { sys::minifier::js(&opt_js::optimize_js(x)).await });
     for target in &mut targets {
         match target {
             ProcessTarget::Individual(i) => match i.path.extension().unwrap().to_str().unwrap() {
-                "html" => {
-                    i.minify_str(ac!(|x| { sys::minifier::html(&x).await }))
-                        .await?;
-                }
-                "css" => {
-                    i.minify_str(ac!(|x| { sys::minifier::css(&x).await }))
-                        .await?;
-                }
-                "js" => {
-                    i.minify_str(ac!(|x| {
-                        sys::minifier::js(&func::minify_function_decl(x)).await
-                    }))
-                    .await?;
-                }
+                "html" => i.minify_str(&minify_html).await?,
+                "css" => i.minify_str(&minify_css).await?,
+                "js" => i.minify_str(&minify_js).await?,
                 _ => {}
             },
-            ProcessTarget::WasmBindgen { js, wasm: _ } => {
-                js.minify_str(ac!(|x| {
-                    sys::minifier::js(&func::minify_function_decl(x)).await
-                }))
-                .await?;
+            ProcessTarget::WasmBindgen { js, wasm } => {
+                symbol::minify_symbol(&mut wasm.content, &mut js.content).await;
+                js.minify_str(&minify_js).await?;
             }
         }
     }
 
+    // finalize and show result
     let mut files = vec![];
     for target in targets {
         match target {
@@ -235,10 +224,7 @@ async fn start() -> Result<()> {
 struct SwcFilter;
 impl<S: Subscriber> Layer<S> for SwcFilter {
     fn enabled(&self, metadata: &Metadata<'_>, _ctx: Context<'_, S>) -> bool {
-        if let Some(mpath) = metadata.module_path() && mpath.starts_with("swc") {
-            return false
-        }
-        true
+        !matches!(metadata.module_path(), Some(mpath) if mpath.starts_with("swc"))
     }
 }
 

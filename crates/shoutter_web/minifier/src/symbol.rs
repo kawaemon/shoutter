@@ -386,6 +386,9 @@ impl MinifiedIdent {
 impl Iterator for MinifiedIdent {
     type Item = String;
 
+    // 123
+    // 123 % 10 = 3, 123 /= 10 -> 12
+    // 12 % 10 = 2, 12 /= 10 -> 1
     fn next(&mut self) -> Option<Self::Item> {
         let mut ret = String::new();
         let chars = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -404,15 +407,7 @@ impl Iterator for MinifiedIdent {
 #[test]
 fn minified_ident() {
     assert_eq!(
-        MinifiedIdent::new().take(5).collect::<Vec<_>>().join(""),
-        "abcde"
-    );
-    assert_eq!(
-        MinifiedIdent::new()
-            .step_by(10)
-            .take(10)
-            .collect::<Vec<_>>()
-            .join(" "),
-        "a k u E O Y ib sb Cb Mb"
+        MinifiedIdent::new().take(60).collect::<Vec<_>>().join(" "),
+        "a b c d e f g h i j k l m n o p q r s t u v w x y z A B C D E F G H I J K L M N O P Q R S T U V W X Y Z ba bb bc bd be bf bg bh",
     );
 }
